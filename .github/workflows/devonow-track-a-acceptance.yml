@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: dtolnay/rust-toolchain@1.120
         with:
           targets: x86_64-pc-windows-msvc
       - name: Verify native host and candidate source
@@ -98,7 +98,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: dtolnay/rust-toolchain@1.120
         with:
           targets: x86_64-apple-darwin
       - name: Verify native host and candidate source
