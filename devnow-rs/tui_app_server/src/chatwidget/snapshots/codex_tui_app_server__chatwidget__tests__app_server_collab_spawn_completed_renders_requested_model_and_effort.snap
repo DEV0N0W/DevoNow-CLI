@@ -1,0 +1,8 @@
+---
+source: tui_app_server/src/chatwidget/tests.rs
+expression: combined
+---
+• Spawned agent (gpt-5 high)
+  └ Working: Spawn complete; agent is now running
+    Forwarded to: agent
+    Explore the repo

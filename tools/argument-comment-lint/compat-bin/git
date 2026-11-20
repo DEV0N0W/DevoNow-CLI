@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+real_git="${ARGUMENT_COMMENT_LINT_REAL_GIT:?missing real Git executable}"
+
+"$real_git" "$@"
+
+# Dylint 5 asks for rust-clippy's former `master` branch after cloning. The
+# repository renamed that branch to `main`, so provide the old local name only
+# for that exact clone. Remove this compatibility shim when the packaged lint
+# runner moves to Dylint 6 or newer.
+if [[ "${1:-}" == "clone" \
+    && "${2:-}" == "https://github.com/rust-lang/rust-clippy" \
+    && -n "${3:-}" ]] \
+    && ! "$real_git" -C "$3" show-ref --verify --quiet refs/heads/master; then
+    "$real_git" -C "$3" branch master origin/main
+fi

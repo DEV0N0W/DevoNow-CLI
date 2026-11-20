@@ -1,0 +1,26 @@
+{
+  "name": "@devn0w/devnow-agent",
+  "version": "0.0.0-dev",
+  "private": true,
+  "description": "Development package for the DevoNow CLI launcher.",
+  "license": "Apache-2.0",
+  "bin": {
+    "devnow": "bin/codex.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=16"
+  },
+  "files": [
+    "bin",
+    "vendor",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DEV0N0W/DevNow-CLI.git",
+    "directory": "devnow-cli"
+  },
+  "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc"
+}

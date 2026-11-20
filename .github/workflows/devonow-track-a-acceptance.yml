@@ -1,0 +1,155 @@
+name: DevoNow Track A native acceptance preparation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devonow-track-a-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-x64:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      ACCEPTED_SOURCE_SHA256: 948b053788ea11007efe7b846c2cd9e11f9df4e00dbe8915dde2421063392201
+      TRACK_A_EVIDENCE: ${{ github.workspace }}/qa/release-acceptance/reports/ci-u02
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target-track-a
+      CARGO_BUILD_JOBS: "2"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@1.93.0
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Verify native host and candidate source
+        id: preflight
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:TRACK_A_EVIDENCE | Out-Null
+          python qa/release-acceptance/track_a_ci.py --scenario U02 --stage prebuild --expected-source-sha256 $env:ACCEPTED_SOURCE_SHA256 --output "$env:TRACK_A_EVIDENCE/prebuild.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build native Windows CLI
+        id: build
+        if: steps.preflight.outcome == 'success'
+        working-directory: devnow-rs
+        shell: pwsh
+        run: |
+          cargo build --locked -p codex-cli --bin codex --target x86_64-pc-windows-msvc *>&1 | Tee-Object -FilePath "$env:TRACK_A_EVIDENCE/build.log"
+          $buildExit = $LASTEXITCODE
+          @{ exit_code = $buildExit; target = 'x86_64-pc-windows-msvc' } | ConvertTo-Json | Set-Content "$env:TRACK_A_EVIDENCE/build-status.json"
+          if ($buildExit -ne 0) { exit $buildExit }
+      - name: Record executable identity
+        id: postbuild
+        if: steps.build.outcome == 'success'
+        shell: pwsh
+        run: |
+          python qa/release-acceptance/track_a_ci.py --scenario U02 --stage postbuild --binary "$env:CARGO_TARGET_DIR/x86_64-pc-windows-msvc/debug/codex.exe" --prebuild-record "$env:TRACK_A_EVIDENCE/prebuild.json" --output "$env:TRACK_A_EVIDENCE/postbuild.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run isolated offline CLI checks
+        if: steps.postbuild.outcome == 'success'
+        shell: pwsh
+        run: |
+          python qa/release-acceptance/track_a_ci.py --scenario U02 --stage checks --binary "$env:CARGO_TARGET_DIR/x86_64-pc-windows-msvc/debug/codex.exe" --postbuild-record "$env:TRACK_A_EVIDENCE/postbuild.json" --output "$env:TRACK_A_EVIDENCE/checks.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run focused native CLI unit tests
+        if: ${{ always() && steps.postbuild.outcome == 'success' }}
+        working-directory: devnow-rs
+        shell: pwsh
+        run: |
+          cargo test --locked -p codex-cli --bin codex --target x86_64-pc-windows-msvc *>&1 | Tee-Object -FilePath "$env:TRACK_A_EVIDENCE/unit-tests.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compare candidate with accepted source
+        if: ${{ always() && steps.preflight.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          python qa/release-acceptance/track_a_ci.py --scenario U02 --stage source-gate --prebuild-record "$env:TRACK_A_EVIDENCE/prebuild.json" --output "$env:TRACK_A_EVIDENCE/source-comparison.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain Windows evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: track-a-u02-windows-x64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.TRACK_A_EVIDENCE }}/
+          if-no-files-found: warn
+          retention-days: 14
+
+  macos-intel:
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    env:
+      ACCEPTED_SOURCE_SHA256: 948b053788ea11007efe7b846c2cd9e11f9df4e00dbe8915dde2421063392201
+      TRACK_A_EVIDENCE: ${{ github.workspace }}/qa/release-acceptance/reports/ci-u03
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target-track-a
+      CARGO_BUILD_JOBS: "2"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@1.93.0
+        with:
+          targets: x86_64-apple-darwin
+      - name: Verify native host and candidate source
+        id: preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$TRACK_A_EVIDENCE"
+          python3 -B qa/release-acceptance/track_a_ci.py --scenario U03 --stage prebuild --expected-source-sha256 "$ACCEPTED_SOURCE_SHA256" --output "$TRACK_A_EVIDENCE/prebuild.json"
+      - name: Build native Intel macOS CLI
+        id: build
+        if: steps.preflight.outcome == 'success'
+        working-directory: devnow-rs
+        shell: bash
+        run: |
+          set -uo pipefail
+          cargo build --locked -p codex-cli --bin codex --target x86_64-apple-darwin 2>&1 | tee "$TRACK_A_EVIDENCE/build.log"
+          build_exit=${PIPESTATUS[0]}
+          printf '{"exit_code":%s,"target":"x86_64-apple-darwin"}\n' "$build_exit" > "$TRACK_A_EVIDENCE/build-status.json"
+          exit "$build_exit"
+      - name: Record executable identity
+        id: postbuild
+        if: steps.build.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B qa/release-acceptance/track_a_ci.py --scenario U03 --stage postbuild --binary "$CARGO_TARGET_DIR/x86_64-apple-darwin/debug/codex" --prebuild-record "$TRACK_A_EVIDENCE/prebuild.json" --output "$TRACK_A_EVIDENCE/postbuild.json"
+      - name: Run isolated offline CLI checks
+        if: steps.postbuild.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B qa/release-acceptance/track_a_ci.py --scenario U03 --stage checks --binary "$CARGO_TARGET_DIR/x86_64-apple-darwin/debug/codex" --postbuild-record "$TRACK_A_EVIDENCE/postbuild.json" --output "$TRACK_A_EVIDENCE/checks.json"
+      - name: Run focused native CLI unit tests
+        if: ${{ always() && steps.postbuild.outcome == 'success' }}
+        working-directory: devnow-rs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-cli --bin codex --target x86_64-apple-darwin 2>&1 | tee "$TRACK_A_EVIDENCE/unit-tests.log"
+      - name: Compare candidate with accepted source
+        if: ${{ always() && steps.preflight.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B qa/release-acceptance/track_a_ci.py --scenario U03 --stage source-gate --prebuild-record "$TRACK_A_EVIDENCE/prebuild.json" --output "$TRACK_A_EVIDENCE/source-comparison.json"
+      - name: Retain Intel macOS evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: track-a-u03-macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.TRACK_A_EVIDENCE }}/
+          if-no-files-found: warn
+          retention-days: 14

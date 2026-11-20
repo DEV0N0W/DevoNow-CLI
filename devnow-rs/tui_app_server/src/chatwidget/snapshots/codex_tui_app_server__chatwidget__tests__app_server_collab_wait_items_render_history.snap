@@ -1,0 +1,17 @@
+---
+source: tui_app_server/src/chatwidget/tests.rs
+expression: combined
+---
+• Waiting for 2 agents
+  └ Working: Waiting for all routed agents to respond
+    Summary: multiple child agents are still in flight
+    progress: no child agent has returned a final answer yet
+    Next: wait for all routed agents
+    Forwarded to: Robie [explorer]
+    Forwarded to: Ada [reviewer]
+
+
+• Finished waiting
+  └ Robie [explorer]: Completed - Done
+    Ada [reviewer]: Running
+    Summary: 1/2 agents approved

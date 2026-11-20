@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  pull_request: {}
+  push: { branches: [main, master] }
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Offline packaging regression tests
+        run: python3 -B -m unittest discover -s devnow-cli/tests -v
+
+      - name: Stage npm package from this checkout
+        id: stage_npm_package
+        run: |
+          set -euo pipefail
+          PACK_OUTPUT="${RUNNER_TEMP}/devnow-npm-0.0.0-ci.tgz"
+          python3 -B devnow-cli/scripts/build_npm_package.py \
+            --release-version 0.0.0-ci \
+            --pack-output "$PACK_OUTPUT"
+          echo "pack_output=$PACK_OUTPUT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload staged npm package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: devnow-npm-staging
+          path: ${{ steps.stage_npm_package.outputs.pack_output }}
+
+      - name: Ensure root README.md contains only ASCII and certain Unicode code points
+        run: python3 scripts/asciicheck.py README.md
+      - name: Check root README ToC
+        run: python3 scripts/readme_toc.py README.md
+
+      - name: Ensure devnow-cli/README.md contains only ASCII and certain Unicode code points
+        run: python3 scripts/asciicheck.py devnow-cli/README.md
+      - name: Check devnow-cli/README ToC
+        run: python3 scripts/readme_toc.py devnow-cli/README.md
+
+      - name: Prettier (run `pnpm run format:fix` to fix)
+        run: pnpm run format
