@@ -123,7 +123,11 @@ jobs:
         run: bash -n tools/argument-comment-lint/run.sh
       - name: Test argument comment lint package
         working-directory: tools/argument-comment-lint
-        run: cargo test
+        shell: bash
+        run: |
+          export ARGUMENT_COMMENT_LINT_REAL_GIT="$(command -v git)"
+          export PATH="$PWD/compat-bin:$PATH"
+          cargo test --locked
 
   argument_comment_lint_prebuilt:
     name: Argument comment lint - ${{ matrix.name }}
