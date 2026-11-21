@@ -157,7 +157,20 @@ jobs:
       - uses: facebook/install-dotslash@v2
       - name: Run argument comment lint on devnow-rs
         shell: bash
-        run: ./tools/argument-comment-lint/run-prebuilt-linter.sh
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            # Native Windows processes cannot invoke the Bash Git shim.
+            # Dylint 5 still checks out Clippy's former master branch.
+            clippy_url=https://github.com/rust-lang/rust-clippy
+            clippy_repo="$(mktemp -d)/rust-clippy.git"
+            git clone --bare --single-branch --branch main "$clippy_url" "$clippy_repo"
+            git --git-dir="$clippy_repo" branch master main
+            git --git-dir="$clippy_repo" symbolic-ref HEAD refs/heads/master
+            export GIT_CONFIG_COUNT=1
+            export GIT_CONFIG_KEY_0="url.file:///$(cygpath -am "$clippy_repo").insteadOf"
+            export GIT_CONFIG_VALUE_0="$clippy_url"
+          fi
+          ./tools/argument-comment-lint/run-prebuilt-linter.sh
 
   # --- CI to validate on different os/targets --------------------------------
   lint_build:
