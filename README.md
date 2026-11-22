@@ -144,22 +144,9 @@ Runs an orchestrated workflow across planning, implementation, review, quality, 
 - [Slash commands](docs/slash_commands.md)
 - [Agent instructions](docs/agents_md.md)
 
-## Development
-
-Run commands from `devnow-rs`:
-
-```bash
-cargo test -p codex-tui
-cargo test -p codex-tui-app-server
-just fmt
-just argument-comment-lint
-```
-
-See [CONTRIBUTING](docs/contributing.md) for the complete development workflow.
-
 ## Contributing
 
-Issues and pull requests are welcome. Please read the [contribution guide](docs/contributing.md), [Code of Conduct](CODE_OF_CONDUCT.md), and [support guide](SUPPORT.md) before participating.
+Issues and pull requests are welcome. Please read the [contribution guide](docs/contributing.md), including its [local Rust checks](docs/contributing.md#local-rust-checks), and review the [Code of Conduct](CODE_OF_CONDUCT.md) and [support guide](SUPPORT.md) before participating.
 
 ## License and attribution
 

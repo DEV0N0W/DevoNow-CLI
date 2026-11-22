@@ -6,7 +6,7 @@ Participation is governed by the project [Code of Conduct](../CODE_OF_CONDUCT.md
 
 ## Before you start
 
-1. Search the [issues](https://github.com/DEV0N0W/DevNow-CLI/issues) to avoid duplicates.
+1. Search the [issues](https://github.com/DEV0N0W/DevoNow-CLI/issues) to avoid duplicates.
 2. For a significant feature or architecture change, open an issue before investing in an implementation.
 3. Keep each pull request focused on one problem.
 4. Never include credentials, tokens, private prompts, customer data, or generated local configuration.
@@ -21,25 +21,35 @@ Participation is governed by the project [Code of Conduct](../CODE_OF_CONDUCT.md
 6. Run the checks that apply to the crates you changed.
 7. Open a pull request describing what changed, why it changed, and how it was tested.
 
-## Rust checks
+## Local Rust checks
 
-Run commands from `devnow-rs`:
+Follow the [source build requirements](../README.md#requirements) before running checks. Run these commands from `devnow-rs`. Set `crate` to the Cargo package you changed.
+
+```bash
+crate=codex-tui
+cargo test -p "$crate"
+```
+
+Install `just` for the formatting and lint recipes. The first two recipes can modify source files. Review their changes before committing. The argument-comment lint runs from the repository root and requires DotSlash and the pinned nightly toolchain. See the [lint setup guide](../tools/argument-comment-lint/README.md).
 
 ```bash
 just fmt
-just fix -p <crate-you-changed>
-just argument-comment-lint
-cargo test -p <crate-you-changed>
+just fix -p "$crate"
+(cd .. && just argument-comment-lint)
 ```
 
-For TUI changes, run the relevant snapshot suite and review every new snapshot before accepting it:
+For terminal UI changes, run the suite that covers the affected behavior. If both terminal UIs implement that behavior, run both suites.
 
 ```bash
 cargo test -p codex-tui
-cargo insta pending-snapshots -p codex-tui
+cargo test -p codex-tui-app-server
 ```
 
-If the parallel app-server TUI implements the same behavior, update and test it too.
+If your change affects snapshots, install `cargo-insta` and review the pending snapshots for the affected package before accepting them.
+
+```bash
+cargo insta pending-snapshots -p "$crate"
+```
 
 ## Pull-request expectations
 
