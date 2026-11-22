@@ -17,54 +17,54 @@ DevoNow CLI is derived from the open-source [Codex](https://github.com/openai/co
 
 ## Requirements
 
-- Git 2.23 or newer
-- Rust stable with Cargo, rustfmt, and Clippy
-- 4 GB RAM minimum; 8 GB recommended
-- macOS 12+, Ubuntu 20.04+/Debian 10+, or Windows 11
+- Git 2.23 or newer and [Rustup](https://rustup.rs/). The Rust workspace pins its compiler and components in [rust-toolchain.toml](devnow-rs/rust-toolchain.toml).
+- A native build toolchain for your platform:
+  - **macOS:** Install the Xcode Command Line Tools with `xcode-select --install` if needed.
+  - **Ubuntu or Debian:** Run `sudo apt-get install build-essential pkg-config libcap-dev libssl-dev`.
+  - **Windows:** Install Visual Studio Build Tools with the **Desktop development with C++** workload and a Windows SDK. Use the MSVC Rust toolchain.
 
 ## Install from source
 
-Clone the repository and enter the Rust workspace:
+Clone the repository and enter the Rust workspace.
 
 ```bash
-git clone https://github.com/DEV0N0W/DevNow-CLI.git
-cd DevNow-CLI/devnow-rs
+git clone https://github.com/DEV0N0W/DevoNow-CLI.git
+cd DevoNow-CLI/devnow-rs
 ```
 
-Install the required Rust components and build the release binary:
+Build the CLI with the versions recorded in the lockfile.
 
 ```bash
-rustup component add rustfmt clippy
-cargo build --release --bin codex
+cargo build --locked --release -p codex-cli --bin codex
 ```
 
-The workspace retains the internal `codex` binary name for upstream compatibility. Install it as the public `devnow` command.
+The workspace retains the internal `codex` binary name for upstream compatibility. The commands below install it as `devnow` and add it to your current shell's `PATH`.
 
-macOS or Linux:
+**macOS or Linux**
 
 ```bash
 mkdir -p "$HOME/.local/bin"
 cp target/release/codex "$HOME/.local/bin/devnow"
 chmod +x "$HOME/.local/bin/devnow"
+export PATH="$HOME/.local/bin:$PATH"
+devnow --version
 ```
 
-Windows PowerShell:
+**Windows PowerShell**
 
 ```powershell
 $devoNowBin = "$env:LOCALAPPDATA\DevoNow\bin"
 New-Item -ItemType Directory -Force $devoNowBin | Out-Null
 Copy-Item .\target\release\codex.exe "$devoNowBin\devnow.exe"
-```
-
-Add the installation directory to your `PATH`, then verify the command:
-
-```bash
+$env:Path = "$devoNowBin;$env:Path"
 devnow --version
 ```
 
+For future terminals, add the installation directory to your shell startup file on macOS or Linux, or to your user `Path` environment variable on Windows.
+
 ## Configure DevoNow
 
-DevoNow reads configuration from `CODEX_HOME`. The variable name is retained for compatibility with the upstream codebase.
+Set `CODEX_HOME` in the terminal where you plan to run DevoNow. This gives DevoNow its own configuration directory. The variable name comes from the upstream codebase.
 
 macOS or Linux:
 
@@ -92,7 +92,7 @@ Provider credentials are read from environment variables and must not be committ
 
 ## Run
 
-Open the project you want DevoNow to work on:
+After configuring your model and signing in or setting the credentials your provider requires, open a project to explore.
 
 ```bash
 cd /path/to/your/project
