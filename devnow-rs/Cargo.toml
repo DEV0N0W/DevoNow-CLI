@@ -342,7 +342,7 @@ webbrowser = "1.0"
 which = "8"
 wildmatch = "2.6.1"
 zip = "2.4.2"
-zstd = "0.13"
+zstd = "0.14"
 
 wiremock = "0.6"
 zeroize = "1.8.2"
